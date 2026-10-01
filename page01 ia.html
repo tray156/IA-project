@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Restaurant Analytics</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ea66d4 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.8s;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            animation: fadeInUp 0.8s;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .stat-card .icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: fadeIn 1s;
+        }
+
+        .chart-container h3 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .filters {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            animation: fadeIn 0.8s;
+        }
+
+        .filters h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .filter-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-item label {
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .filter-item select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .filter-item select:focus {
+            outline: none;
+            border-color: #66eac9;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #91d3c9 0%, #38f6ad 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .prediction-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .prediction-result {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.2em;
+            display: none;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ Dashboard Analytics Restaurant</h1>
+            <p>Analyse en temps réel des ventes et prédictions ML</p>
+        </div>
+
+        <!-- Statistiques principales -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon">💰</div>
+                <div class="value" id="totalSales">0 DT</div>
+                <div class="label">Ventes Totales</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">📦</div>
+                <div class="value" id="totalOrders">0</div>
+                <div class="label">Commandes</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">🎯</div>
+                <div class="value" id="avgOrder">0 DT</div>
+                <div class="label">Panier Moyen</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">📊</div>
+                <div class="value" id="modelAccuracy">95.2%</div>
+                <div class="label">Précision Modèle</div>
+            </div>
+        </div>
+
+        <!-- Filtres -->
+        <div class="filters">
+            <h3>🔍 Filtres d'analyse</h3>
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label>Catégorie</label>
+                    <select id="categoryFilter">
+                        <option value="all">Toutes les catégories</option>
+                        <option value="Main Dishes">Main Dishes</option>
+                        <option value="Starters">Starters</option>
+                        <option value="Desserts">Desserts</option>
+                        <option value="Drinks">Drinks</option>
+                        <option value="Side Dishes">Side Dishes</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Année</label>
+                    <select id="yearFilter">
+                        <option value="all">Toutes les années</option>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                         <option value="2026">2026</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Mois</label>
+                    <select id="monthFilter">
+                        <option value="all">Tous les mois</option>
+                        <option value="1">Janvier</option>
+                        <option value="2">Février</option>
+                        <option value="3">Mars</option>
+                        <option value="4">Avril</option>
+                        <option value="5">Mai</option>
+                        <option value="6">Juin</option>
+                        <option value="7">Juillet</option>
+                        <option value="8">Août</option>
+                        <option value="9">Septembre</option>
+                        <option value="10">Octobre</option>
+                        <option value="11">Novembre</option>
+                        <option value="12">Décembre</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn" onclick="applyFilters()">Appliquer les filtres</button>
+        </div>
+
+        <!-- Graphiques -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h3>📈 Ventes par Catégorie</h3>
+                <canvas id="categorySalesChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>💳 Méthodes de Paiement</h3>
+                <canvas id="paymentMethodChart"></canvas>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h3>📅 Évolution Mensuelle des Ventes</h3>
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>🏆 Top 10 Items</h3>
+                <canvas id="topItemsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Section Prédiction -->
+        <div class="prediction-section">
+            <h3>🤖 Prédiction de Méthode de Paiement</h3>
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label>Catégorie</label>
+                    <select id="predCategory">
+                        <option value="Main Dishes">Main Dishes</option>
+                        <option value="Starters">Starters</option>
+                        <option value="Desserts">Desserts</option>
+                        <option value="Drinks">Drinks</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Prix (DT)</label>
+                    <select id="predPrice">
+                        <option value="12">12</option>
+                        <option value="15">15</option>
+                        <option value="8">8</option>
+                        <option value="6">6</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Quantité</label>
+                    <select id="predQuantity">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Jour de la semaine</label>
+                    <select id="predDay">
+                        <option value="0">Lundi</option>
+                        <option value="1">Mardi</option>
+                        <option value="2">Mercredi</option>
+                        <option value="3">Jeudi</option>
+                        <option value="4">Vendredi</option>
+                        <option value="5">Samedi</option>
+                        <option value="6">Dimanche</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn" onclick="makePrediction()">🔮 Prédire</button>
+            <div class="prediction-result" id="predictionResult"></div>
+        </div>
+    </div>
+
+    <script>
+        // Données simulées basées sur votre dataset
+        const data = {
+            categorySales: {
+                labels: ['Main Dishes', 'Starters', 'Desserts', 'Drinks', 'Side Dishes'],
+                values: [125000, 45000, 38000, 52000, 28000]
+            },
+            paymentMethods: {
+                labels: ['Credit Card', 'Cash', 'Digital Wallet'],
+                values: [5504, 5499, 5449]
+            },
+            monthlyTrend: {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'],
+                values: [22000, 21000, 24000, 23000, 25000, 26000, 28000, 27000, 25000, 26000, 24000, 27000]
+            },
+            topItems: {
+                labels: ['Pasta Alfredo', 'Grilled Chicken', 'Caesar Salad', 'Burger', 'Pizza', 'Steak', 'Soup', 'Tacos', 'Sushi', 'Risotto'],
+                values: [18500, 17200, 15800, 14500, 13900, 12800, 11500, 10200, 9800, 9200]
+            }
+        };
+
+        // Mise à jour des statistiques
+        document.getElementById('totalSales').textContent = '288 000 DT';
+        document.getElementById('totalOrders').textContent = '17 534';
+        document.getElementById('avgOrder').textContent = '16.42 DT';
+
+        // Graphique des ventes par catégorie
+        const ctxCategory = document.getElementById('categorySalesChart').getContext('2d');
+        new Chart(ctxCategory, {
+            type: 'bar',
+            data: {
+                labels: data.categorySales.labels,
+                datasets: [{
+                    label: 'Ventes (DT)',
+                    data: data.categorySales.values,
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(118, 75, 162, 0.8)',
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 206, 86, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(102, 126, 234, 1)',
+                        'rgba(118, 75, 162, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' DT';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Graphique méthodes de paiement
+        const ctxPayment = document.getElementById('paymentMethodChart').getContext('2d');
+        new Chart(ctxPayment, {
+            type: 'doughnut',
+            data: {
+                labels: data.paymentMethods.labels,
+                datasets: [{
+                    data: data.paymentMethods.values,
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(75, 192, 192, 0.8)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Graphique tendance mensuelle
+        const ctxMonthly = document.getElementById('monthlyTrendChart').getContext('2d');
+        new Chart(ctxMonthly, {
+            type: 'line',
+            data: {
+                labels: data.monthlyTrend.labels,
+                datasets: [{
+                    label: 'Ventes (DT)',
+                    data: data.monthlyTrend.values,
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' DT';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Graphique top items
+        const ctxTop = document.getElementById('topItemsChart').getContext('2d');
+        new Chart(ctxTop, {
+            type: 'horizontalBar',
+            data: {
+                labels: data.topItems.labels,
+                datasets: [{
+                    label: 'Ventes (DT)',
+                    data: data.topItems.values,
+                    backgroundColor: 'rgba(118, 75, 162, 0.8)',
+                    borderColor: 'rgba(118, 75, 162, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' DT';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Fonction pour appliquer les filtres
+        function applyFilters() {
+            const category = document.getElementById('categoryFilter').value;
+            const year = document.getElementById('yearFilter').value;
+            const month = document.getElementById('monthFilter').value;
+            
+            alert(`Filtres appliqués:\nCatégorie: ${category}\nAnnée: ${year}\nMois: ${month}\n\nNote: Dans une vraie application, cela rechargerait les données.`);
+        }
+
+        // Fonction de prédiction simulée
+        function makePrediction() {
+            const category = document.getElementById('predCategory').value;
+            const price = document.getElementById('predPrice').value;
+            const quantity = document.getElementById('predQuantity').value;
+            const day = document.getElementById('predDay').value;
+            
+            // Simulation de prédiction basée sur des règles simples
+            let prediction;
+            const total = price * quantity;
+            
+            if (total > 50) {
+                prediction = 'Credit Card';
+            } else if (parseInt(day) >= 5) {
+                prediction = 'Digital Wallet';
+            } else {
+                prediction = 'Cash';
+            }
+            
+            const confidence = (Math.random() * 15 + 85).toFixed(1);
+            
+            const resultDiv = document.getElementById('predictionResult');
+            resultDiv.innerHTML = `
+                <strong>Prédiction:</strong> ${prediction}<br>
+                <strong>Confiance:</strong> ${confidence}%<br>
+                <strong>Montant total:</strong> ${total} DT
+            `;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
